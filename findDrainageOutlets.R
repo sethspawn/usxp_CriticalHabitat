@@ -15,6 +15,7 @@ lapply(packages, require, character.only = TRUE)
 
 #================================================================================================================
 
+
 findDrainageOutlets = function(poly){
   
   # explicitly cast poly as a polygon
@@ -43,6 +44,9 @@ findDrainageOutlets = function(poly){
     
     # get points at which habitat polygon intersects the flowlines.
     pts = st_cast(st_intersection(st_cast(poly, 'LINESTRING'), vpu_flowlines), 'POINT')
+    
+    # capitalization is inconsistent across VPUs - standardize native colnames as captitolized
+    colnames(pts) = toupper(colnames(pts))
     
     # create columns in which to report the outlet comid and the number of upstream comids
     pts['outlet_comid'] = rep(NA, nrow(pts))
