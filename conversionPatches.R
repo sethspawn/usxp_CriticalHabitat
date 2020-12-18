@@ -7,7 +7,7 @@
 packages = c(
   "raster",
   "sf",
-  "data.table",
+  "data.table"
 )
 
 install.packages(setdiff(packages, rownames(installed.packages())))
@@ -34,7 +34,6 @@ conversionPatches = function(r, region, years = NULL){
   r_ids = clump(r_clip,  directions = 4) # using 4 directions to seperate fields that might be on a grid
   clump_id = getValues(r_ids)
   xy = xyFromCell(r_ids,1:ncell(r_ids))
-  
   dt = data.table(xy, clump_id, is_clump = r_ids[] %in% freq(r_ids, useNA = 'no')[,1])
   dt = dt[dt$is_clump == T,]
   
