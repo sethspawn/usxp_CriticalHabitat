@@ -13,9 +13,13 @@ packages = c(
 install.packages(setdiff(packages, rownames(installed.packages())))
 lapply(packages, require, character.only = TRUE)
 
-source('./findDrainageOutlets.R')
+#source('./findDrainageOutlets.R')
 
 ##====================================================================================================
+
+r = r_ytc
+region = search_basin
+
 
 conversionPatches = function(r, region, years = NULL){
   
@@ -49,6 +53,13 @@ conversionPatches = function(r, region, years = NULL){
     # get centroid coordinates and year of each patch
     dtm = dt[, lapply(.SD, mean), by=.(clump_id2)]
     
+    # add attribute with area (count * res*2) of each patch (units = km^2) ----> assumes projected CRS
+    dt_patch_area = dt[, .(count = .N), by = clump_id2]
+    dt_patch_area[, 'area'] = dt_patch_area$count * prod(res(r)) * 1e-6 # units = km2
+    
+    # combine patch centroids with their corresponding patch area
+    dtm = merge(dtm, dt_patch_area, by = 'clump_id2')
+    
     # convert to sf points
     patch_pts = st_as_sf(dtm, coords = c('x', 'y'), crs = crs(r))
     
@@ -72,5 +83,3 @@ conversionPatches = function(r, region, years = NULL){
   return(patch_pts)
   
 }
-
-region = search_basin
