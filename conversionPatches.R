@@ -7,7 +7,7 @@
 packages = c(
   "raster",
   "sf",
-  "plyr",
+  "data.table",
 )
 
 install.packages(setdiff(packages, rownames(installed.packages())))
@@ -29,28 +29,29 @@ conversionPatches = function(r, region, years = NULL){
   # clip r to the clipped search baisn extent
   r_clip = crop(r, region)
   
-  # calculate patch ids for conversion patches within watershed
+  # calculate patch ids for conversion patches within watershed -- updated to use data.table
   # from: https://stackoverflow.com/questions/15632630
   r_ids = clump(r_clip,  directions = 4) # using 4 directions to seperate fields that might be on a grid
   clump_id = getValues(r_ids)
   xy = xyFromCell(r_ids,1:ncell(r_ids))
-  df = data.frame(xy, clump_id, is_clump = r_ids[] %in% freq(r_ids, useNA = 'no')[,1])
-  df = df[df$is_clump == T, ]
   
-  if(nrow(df) > 0){
+  dt = data.table(xy, clump_id, is_clump = r_ids[] %in% freq(r_ids, useNA = 'no')[,1])
+  dt = dt[dt$is_clump == T,]
+  
+  if(nrow(dt) > 0){
     
     # add corresponding year as attribute
-    df['year'] = extract(r_clip, df[,c('x', 'y')])
-    df = df[complete.cases(df),]
+    dt[,'year'] = extract(r_clip, dt[,c('x', 'y')])
+    dt = dt[complete.cases(dt),]
     
     # some clumps include conversion in more than one year --> make truly unique id:
-    df['clump_id2'] = paste0(df$clump_id, '_', df$year)
+    dt[,'clump_id2'] = paste0(dt$clump_id, '_', dt$year)
     
-    # get centroid coordinates and year of each patch       <<<======= could be faster
-    dfm = ddply(df, .(clump_id2), summarise, xm = mean(x), ym = mean(y), year = mean(year))
+    # get centroid coordinates and year of each patch
+    dtm = dt[, lapply(.SD, mean), by=.(clump_id2)]
     
     # convert to sf points
-    patch_pts = st_as_sf(dfm, coords = c('xm', 'ym'), crs = crs(r))
+    patch_pts = st_as_sf(dtm, coords = c('x', 'y'), crs = crs(r))
     
     # filter points so only those within regions_clip are retained
     patch_pts = patch_pts[st_within(patch_pts, region, sparse = F),]
@@ -73,3 +74,4 @@ conversionPatches = function(r, region, years = NULL){
   
 }
 
+region = search_basin
