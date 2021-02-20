@@ -17,9 +17,6 @@ lapply(packages, require, character.only = TRUE)
 
 ##====================================================================================================
 
-r = r_ytc
-region = search_basin
-
 
 conversionPatches = function(r, region, years = NULL){
   
@@ -32,6 +29,7 @@ conversionPatches = function(r, region, years = NULL){
   
   # clip r to the clipped search baisn extent
   r_clip = crop(r, region)
+  r_clip = mask(r_clip, region)
   
   # calculate patch ids for conversion patches within watershed -- updated to use data.table
   # from: https://stackoverflow.com/questions/15632630
@@ -63,8 +61,8 @@ conversionPatches = function(r, region, years = NULL){
     # convert to sf points
     patch_pts = st_as_sf(dtm, coords = c('x', 'y'), crs = crs(r))
     
-    # filter points so only those within regions_clip are retained
-    patch_pts = patch_pts[st_within(patch_pts, region, sparse = F),]
+    # # filter points so only those within regions_clip are retained
+    # patch_pts = patch_pts[st_within(patch_pts, region, sparse = F),]
     
     # if years are provided, filter them
     if(!is.null(years)){
